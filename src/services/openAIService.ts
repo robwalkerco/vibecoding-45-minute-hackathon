@@ -1,38 +1,28 @@
-import axios from "axios";
+import OpenAI from "openai";
 
-const API_KEY =
-  "REMOVED_API_KEY";
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-export const suggestCity = async (input: string): Promise<string | null> => {
+export const suggestCity = async (city: string): Promise<string | null> => {
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant that suggests the most likely city name when given a misspelled or ambiguous city name. Respond with only the city name, nothing else.",
-          },
-          {
-            role: "user",
-            content: `What is the most likely city name for: "${input}"?`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 50,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          "Content-Type": "application/json",
+    const completion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that suggests the most likely city name when given a misspelled or incomplete city name. Only respond with the city name, nothing else.",
         },
-      }
-    );
+        {
+          role: "user",
+          content: `What is the most likely city name for: ${city}? Only respond with the city name, nothing else.`,
+        },
+      ],
+      model: "gpt-3.5-turbo",
+    });
 
-    const suggestedCity = response.data.choices[0].message.content.trim();
-    return suggestedCity;
+    const suggestedCity = completion.choices[0]?.message?.content?.trim();
+    return suggestedCity || null;
   } catch (error) {
     console.error("Error getting city suggestion:", error);
     return null;
